@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, TrendingUp, DollarSign, Activity, Zap, ArrowRight, Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { DEMO_CUSTOMERS, DEMO_AI_ACTIONS, getHealthBg, getHealthLabel, PORTFOLIO_HEALTH, MRR_AT_RISK, EXPANSION_OPPORTUNITIES, REVENUE_SAVED_MONTH } from "@/lib/demo-data";
+import { DEMO_CUSTOMERS, DEMO_AI_ACTIONS, getHealthBg, getHealthLabel } from "@/lib/demo-data";
+import { getDashboardStats, getCustomers, getAIActions } from "@/app/actions/data";
 
 function AnimatedNumber({ target, prefix = "", suffix = "", duration = 1500 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
   const [val, setVal] = useState(0);
@@ -27,29 +28,43 @@ function SkeletonCard() {
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [actions, setActions] = useState(DEMO_AI_ACTIONS);
+  const [stats, setStats] = useState({
+    totalCustomers: 0,
+    atRisk: 0,
+    expansionReady: 0,
+    mrr: 0,
+    nrr: 0,
+    agentActions: 0,
+    emailsDrafted: 0,
+    qbrsGenerated: 0,
+  });
+  const [customers, setCustomers] = useState(DEMO_CUSTOMERS);
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const types = ["email_sent", "playbook_triggered", "qbr_generated", "alert_created"] as const;
-      const statuses = ["completed", "pending"] as const;
-      const cust = DEMO_CUSTOMERS[Math.floor(Math.random() * DEMO_CUSTOMERS.length)];
-      const type = types[Math.floor(Math.random() * types.length)];
-      const newAction = {
-        id: `ai_${Date.now()}`,
-        customer_id: cust.id,
-        type,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        payload: type === "email_sent" ? `Outreach to ${cust.name}` : type === "qbr_generated" ? `QBR for ${cust.name}` : type === "playbook_triggered" ? `Playbook for ${cust.name}` : `Alert for ${cust.name}`,
-        result: type === "email_sent" ? "Email delivered" : type === "qbr_generated" ? "QBR generated" : type === "playbook_triggered" ? "Playbook running" : "Flagged for review",
-        created_at: new Date().toISOString(),
-      };
-      setActions(prev => [newAction, ...prev.slice(0, 19)]);
-    }, 10000);
+    // Fetch real data from Supabase
+    const fetchData = async () => {
+      const statsResult = await getDashboardStats();
+      if (statsResult.data) {
+        setStats(statsResult.data);
+      }
+      
+      const customersResult = await getCustomers();
+      if (customersResult.data) {
+        setCustomers(customersResult.data);
+      }
+      
+      const actionsResult = await getAIActions();
+      if (actionsResult.data) {
+        setActions(actionsResult.data);
+      }
+      
+      setLoading(false);
+    };
+    
+    fetchData();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -67,12 +82,12 @@ export default function DashboardPage() {
   }
 
   const pieData = [
-    { name: "Healthy", value: DEMO_CUSTOMERS.filter(c => c.health_score >= 70).length, color: "#10B981" },
-    { name: "At Risk", value: DEMO_CUSTOMERS.filter(c => c.health_score >= 40 && c.health_score < 70).length, color: "#F59E0B" },
-    { name: "Critical", value: DEMO_CUSTOMERS.filter(c => c.health_score < 40).length, color: "#EF4444" },
+    { name: "Healthy", value: customers.filter(c => c.health_score >= 70).length, color: "#10B981" },
+    { name: "At Risk", value: customers.filter(c => c.health_score >= 40 && c.health_score < 70).length, color: "#F59E0B" },
+    { name: "Critical", value: customers.filter(c => c.health_score < 40).length, color: "#EF4444" },
   ];
 
-  const criticalCustomers = DEMO_CUSTOMERS.filter(c => c.health_score < 40);
+  const criticalCustomers = customers.filter(c => c.health_score < 40);
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -84,7 +99,7 @@ export default function DashboardPage() {
             <Activity className="w-4 h-4 text-indigo" />
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-3xl font-bold font-mono text-emerald"><AnimatedNumber target={PORTFOLIO_HEALTH} /></div>
+            <div className="text-3xl font-bold font-mono text-emerald"><AnimatedNumber target={stats.totalCustomers} /></div>
             <div className="w-16 h-16">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -107,7 +122,7 @@ export default function DashboardPage() {
             <span className="text-xs font-mono text-text-muted">MRR AT RISK</span>
             <AlertTriangle className="w-4 h-4 text-amber" />
           </div>
-          <div className="text-3xl font-bold font-mono text-amber"><AnimatedNumber target={MRR_AT_RISK} prefix="$" /></div>
+          <div className="text-3xl font-bold font-mono text-amber"><AnimatedNumber target={stats.atRisk} suffix="" /></div>
           <p className="text-xs text-danger mt-2">{criticalCustomers.length} customers in critical zone</p>
         </div>
 
@@ -116,7 +131,7 @@ export default function DashboardPage() {
             <span className="text-xs font-mono text-text-muted">EXPANSION OPPS</span>
             <TrendingUp className="w-4 h-4 text-emerald" />
           </div>
-          <div className="text-3xl font-bold font-mono text-emerald"><AnimatedNumber target={EXPANSION_OPPORTUNITIES} prefix="$" /></div>
+          <div className="text-3xl font-bold font-mono text-emerald"><AnimatedNumber target={stats.expansionReady} suffix="" /></div>
           <p className="text-xs text-emerald mt-2">2 upsell opportunities detected</p>
         </div>
 
@@ -125,7 +140,7 @@ export default function DashboardPage() {
             <span className="text-xs font-mono text-text-muted">REVENUE SAVED</span>
             <DollarSign className="w-4 h-4 text-emerald" />
           </div>
-          <div className="text-3xl font-bold font-mono text-emerald"><AnimatedNumber target={REVENUE_SAVED_MONTH} prefix="$" /></div>
+          <div className="text-3xl font-bold font-mono text-emerald"><AnimatedNumber target={stats.mrr} prefix="$" /></div>
           <p className="text-xs text-text-muted mt-2">This month by AI actions</p>
         </div>
       </div>
