@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Zap, Users, Play, Mail, BarChart3, Settings, MessageCircle, X, Send, Loader2, LogOut } from "lucide-react";
 import { DEMO_CUSTOMERS, DEMO_AI_ACTIONS, getHealthBg, getHealthLabel } from "@/lib/demo-data";
 import { useRequireAuth, useAuth } from "@/lib/auth-context";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
@@ -152,6 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </div>
         <div className="ml-auto flex items-center gap-3">
+          <ThemeToggle />
           <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="text-text-muted hover:text-text-secondary text-xs font-mono hidden lg:block">
             {sidebarCollapsed ? "▸" : "◂"}
           </button>
