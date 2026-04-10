@@ -1,9 +1,10 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Zap, Users, Play, Mail, BarChart3, Settings, MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Zap, Users, Play, Mail, BarChart3, Settings, MessageCircle, X, Send, Loader2, LogOut } from "lucide-react";
 import { DEMO_CUSTOMERS, DEMO_AI_ACTIONS, getHealthBg, getHealthLabel } from "@/lib/demo-data";
+import { useRequireAuth, useAuth } from "@/lib/auth-context";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
@@ -112,7 +113,25 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, signOut } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Protect dashboard routes
+  useRequireAuth("/login");
+
+  // Show loading while auth state is being determined
+  const { loading: authLoading } = useAuth();
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-base flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo" />
+          <p className="text-text-secondary">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-base flex flex-col">
@@ -136,7 +155,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="text-text-muted hover:text-text-secondary text-xs font-mono hidden lg:block">
             {sidebarCollapsed ? "▸" : "◂"}
           </button>
-          <div className="w-8 h-8 rounded-full bg-indigo/20 flex items-center justify-center text-indigo text-xs font-bold">JD</div>
+          <button 
+            onClick={signOut}
+            className="text-text-muted hover:text-danger text-xs font-mono"
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+          <div className="w-8 h-8 rounded-full bg-indigo/20 flex items-center justify-center text-indigo text-xs font-bold">
+            {user?.email?.charAt(0).toUpperCase() || "JD"}
+          </div>
         </div>
       </nav>
 

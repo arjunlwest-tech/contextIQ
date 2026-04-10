@@ -109,13 +109,142 @@ alter table emails enable row level security;
 alter table playbooks enable row level security;
 alter table playbook_runs enable row level security;
 
--- RLS Policies (users can only access their own company's data)
-create policy "Users can view own company" on companies for select using (id in (select company_id from users where id = auth.uid()));
-create policy "Users can view own profile" on users for select using (id = auth.uid());
-create policy "Users can view company integrations" on integrations for select using (company_id in (select company_id from users where id = auth.uid()));
-create policy "Users can view company customers" on customers for select using (company_id in (select company_id from users where id = auth.uid()));
-create policy "Users can view company health events" on health_events for select using (customer_id in (select id from customers where company_id in (select company_id from users where id = auth.uid())));
-create policy "Users can view company ai actions" on ai_actions for select using (customer_id in (select id from customers where company_id in (select company_id from users where id = auth.uid())));
-create policy "Users can view company emails" on emails for select using (customer_id in (select id from customers where company_id in (select company_id from users where id = auth.uid())));
-create policy "Users can view company playbooks" on playbooks for select using (company_id in (select company_id from users where id = auth.uid()));
-create policy "Users can view company playbook runs" on playbook_runs for select using (playbook_id in (select id from playbooks where company_id in (select company_id from users where id = auth.uid())));
+-- COMPREHENSIVE RLS Policies
+
+-- Companies: Users can view their own company, admins can insert/update
+CREATE POLICY "Users can view own company" 
+  ON companies FOR SELECT 
+  USING (id IN (SELECT company_id FROM users WHERE id = auth.uid()));
+
+CREATE POLICY "Admins can update company" 
+  ON companies FOR UPDATE 
+  USING (id IN (SELECT company_id FROM users WHERE id = auth.uid() AND role = 'admin'));
+
+CREATE POLICY "Users can create company during signup" 
+  ON companies FOR INSERT 
+  WITH CHECK (true);
+
+-- Users: View own profile, update own data
+CREATE POLICY "Users can view own profile" 
+  ON users FOR SELECT 
+  USING (id = auth.uid());
+
+CREATE POLICY "Users can update own profile" 
+  ON users FOR UPDATE 
+  USING (id = auth.uid());
+
+CREATE POLICY "Allow profile creation on signup" 
+  ON users FOR INSERT 
+  WITH CHECK (id = auth.uid());
+
+-- Integrations: Full CRUD for company data
+CREATE POLICY "Users can view company integrations" 
+  ON integrations FOR SELECT 
+  USING (company_id IN (SELECT company_id FROM users WHERE id = auth.uid()));
+
+CREATE POLICY "Admins can manage integrations" 
+  ON integrations FOR ALL 
+  USING (company_id IN (SELECT company_id FROM users WHERE id = auth.uid() AND role = 'admin'));
+
+-- Customers: Full CRUD for company customers
+CREATE POLICY "Users can view company customers" 
+  ON customers FOR SELECT 
+  USING (company_id IN (SELECT company_id FROM users WHERE id = auth.uid()));
+
+CREATE POLICY "Admins can manage customers" 
+  ON customers FOR ALL 
+  USING (company_id IN (SELECT company_id FROM users WHERE id = auth.uid() AND role = 'admin'));
+
+-- Health Events: View for all company users, insert via triggers/API
+CREATE POLICY "Users can view company health events" 
+  ON health_events FOR SELECT 
+  USING (customer_id IN (SELECT id FROM customers WHERE company_id IN (SELECT company_id FROM users WHERE id = auth.uid())));
+
+CREATE POLICY "System can insert health events" 
+  ON health_events FOR INSERT 
+  WITH CHECK (true);
+
+-- AI Actions: Full visibility, system can create
+CREATE POLICY "Users can view company ai actions" 
+  ON ai_actions FOR SELECT 
+  USING (customer_id IN (SELECT id FROM customers WHERE company_id IN (SELECT company_id FROM users WHERE id = auth.uid())));
+
+CREATE POLICY "System can create ai actions" 
+  ON ai_actions FOR INSERT 
+  WITH CHECK (true);
+
+CREATE POLICY "Admins can update ai actions" 
+  ON ai_actions FOR UPDATE 
+  USING (customer_id IN (SELECT id FROM customers WHERE company_id IN (SELECT company_id FROM users WHERE id = auth.uid() AND role = 'admin')));
+
+-- Emails: Full CRUD
+CREATE POLICY "Users can view company emails" 
+  ON emails FOR SELECT 
+  USING (customer_id IN (SELECT id FROM customers WHERE company_id IN (SELECT company_id FROM users WHERE id = auth.uid())));
+
+CREATE POLICY "Users can manage company emails" 
+  ON emails FOR ALL 
+  USING (customer_id IN (SELECT id FROM customers WHERE company_id IN (SELECT company_id FROM users WHERE id = auth.uid())));
+
+-- Playbooks: Full CRUD for admins
+CREATE POLICY "Users can view company playbooks" 
+  ON playbooks FOR SELECT 
+  USING (company_id IN (SELECT company_id FROM users WHERE id = auth.uid()));
+
+CREATE POLICY "Admins can manage playbooks" 
+  ON playbooks FOR ALL 
+  USING (company_id IN (SELECT company_id FROM users WHERE id = auth.uid() AND role = 'admin'));
+
+-- Playbook Runs: View for all, insert via system
+CREATE POLICY "Users can view company playbook runs" 
+  ON playbook_runs FOR SELECT 
+  USING (playbook_id IN (SELECT id FROM playbooks WHERE company_id IN (SELECT company_id FROM users WHERE id = auth.uid())));
+
+CREATE POLICY "System can create playbook runs" 
+  ON playbook_runs FOR INSERT 
+  WITH CHECK (true);
+
+-- TRIGGERS AND FUNCTIONS
+
+-- Function to handle new user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Insert into public.users table
+  INSERT INTO public.users (id, email, role, created_at)
+  VALUES (new.id, new.email, 'admin', now());
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to automatically create user profile on auth signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Function to update health score when health event is added
+CREATE OR REPLACE FUNCTION public.update_customer_health_score()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE customers 
+  SET health_score = NEW.score
+  WHERE id = NEW.customer_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update health score on new health event
+DROP TRIGGER IF EXISTS on_health_event_added ON health_events;
+CREATE TRIGGER on_health_event_added
+  AFTER INSERT ON health_events
+  FOR EACH ROW EXECUTE FUNCTION public.update_customer_health_score();
+
+-- INDEXES FOR PERFORMANCE
+CREATE INDEX idx_users_company_id ON users(company_id);
+CREATE INDEX idx_customers_company_id ON customers(company_id);
+CREATE INDEX idx_health_events_customer_id ON health_events(customer_id);
+CREATE INDEX idx_ai_actions_customer_id ON ai_actions(customer_id);
+CREATE INDEX idx_emails_customer_id ON emails(customer_id);
+CREATE INDEX idx_playbooks_company_id ON playbooks(company_id);
+CREATE INDEX idx_integrations_company_id ON integrations(company_id);
