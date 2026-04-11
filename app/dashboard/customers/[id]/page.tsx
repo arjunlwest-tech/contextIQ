@@ -272,7 +272,7 @@ export default function CustomerDetailPage() {
           <div className="space-y-4">
             {customerActions.length === 0 ? (
               <p className="text-text-muted text-sm">No AI actions recorded yet.</p>
-            ) : customerActions.map(a => {
+            ) : customerActions.map((a: { id: string; created_at: string; type: string; payload: string; result: string }) => {
               const timeAgo = Math.floor((Date.now() - new Date(a.created_at).getTime()) / 60000);
               return (
                 <div key={a.id} className="flex items-start gap-3 pb-4 border-b border-border/50 last:border-0">
