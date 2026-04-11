@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, TrendingUp, DollarSign, Activity, Zap, ArrowRight, Loader2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { DEMO_CUSTOMERS, DEMO_AI_ACTIONS, getHealthBg, getHealthLabel } from "@/lib/demo-data";
+import { DEMO_AI_ACTIONS, getHealthBg, getHealthLabel } from "@/lib/demo-data";
 import { getDashboardStats, getCustomers, getAIActions } from "@/app/actions/data";
 
 function AnimatedNumber({ target, prefix = "", suffix = "", duration = 1500 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
@@ -38,7 +38,7 @@ export default function DashboardPage() {
     emailsDrafted: 0,
     qbrsGenerated: 0,
   });
-  const [customers, setCustomers] = useState(DEMO_CUSTOMERS);
+  const [customers, setCustomers] = useState<any[]>([]);
 
   useEffect(() => {
     // Fetch real data from Supabase
@@ -172,7 +172,7 @@ export default function DashboardPage() {
                 <ArrowRight className="w-4 h-4 text-text-muted shrink-0 mt-1" />
               </div>
             ))}
-            {DEMO_CUSTOMERS.filter(c => c.health_score >= 40 && c.health_score < 70).slice(0, 2).map(c => (
+            {customers.filter(c => c.health_score >= 40 && c.health_score < 70).slice(0, 2).map(c => (
               <div key={c.id} className="flex items-start gap-3 p-3 rounded-lg bg-amber/5 border border-amber/10">
                 <div className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold shrink-0 ${getHealthBg(c.health_score)}`}>
                   {c.health_score}
@@ -194,7 +194,7 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-hide">
             {actions.map(a => {
-              const cust = DEMO_CUSTOMERS.find(c => c.id === a.customer_id);
+              const cust = customers.find(c => c.id === a.customer_id);
               const timeAgo = Math.floor((Date.now() - new Date(a.created_at).getTime()) / 60000);
               const typeIcon = a.type === "email_sent" ? "📧" : a.type === "qbr_generated" ? "📊" : a.type === "playbook_triggered" ? "⚡" : "🔔";
               return (
@@ -220,7 +220,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/customers" className="text-xs text-indigo hover:text-indigo-light">View all →</Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {DEMO_CUSTOMERS.map(c => (
+          {customers.map(c => (
             <Link key={c.id} href={`/dashboard/customers/${c.id}`} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-border-light bg-base transition-colors">
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold ${getHealthBg(c.health_score)}`}>
                 {c.health_score}

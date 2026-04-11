@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Zap, Users, Play, Mail, BarChart3, Settings, MessageCircle, X, Send, Loader2, LogOut } from "lucide-react";
-import { DEMO_CUSTOMERS, DEMO_AI_ACTIONS, getHealthBg, getHealthLabel } from "@/lib/demo-data";
+import { getHealthBg, getHealthLabel } from "@/lib/demo-data";
 import { useRequireAuth, useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { getCustomers } from "@/app/actions/data";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
@@ -29,10 +30,12 @@ function AIChatWidget() {
     setMessages(prev => [...prev, { role: "user", content: q }]);
     setLoading(true);
     try {
+      const customersRes = await getCustomers();
+      const customers = customersRes.data || [];
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, context: `Customers: ${DEMO_CUSTOMERS.map(c => `${c.name} (health: ${c.health_score}, MRR: $${c.mrr})`).join(", ")}` }),
+        body: JSON.stringify({ question: q, context: `Customers: ${customers.map(c => `${c.name} (health: ${c.health_score}, MRR: $${c.mrr})`).join(", ")}` }),
       });
       const data = await res.json();
       setMessages(prev => [...prev, { role: "assistant", content: data.response || data.error || "Sorry, I couldn't process that." }]);
@@ -86,7 +89,7 @@ function AIChatWidget() {
   );
 }
 
-function Sidebar({ collapsed }: { collapsed: boolean }) {
+function Sidebar({ collapsed, customers }: { collapsed: boolean; customers: any[] }) {
   const pathname = usePathname();
   return (
     <aside className={`hidden lg:flex flex-col border-r border-border bg-surface ${collapsed ? "w-16" : "w-64"} transition-all duration-200`}>
@@ -94,7 +97,7 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
         <h3 className={`font-mono text-xs text-text-muted ${collapsed ? "text-center" : "px-2"}`}>CUSTOMERS</h3>
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        {DEMO_CUSTOMERS.map(c => (
+        {customers.map(c => (
           <Link key={c.id} href={`/dashboard/customers/${c.id}`} className={`flex items-center gap-2 px-3 py-2 hover:bg-surface-light transition-colors ${pathname === `/dashboard/customers/${c.id}` ? "bg-surface-light" : ""}`}>
             <div className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold ${getHealthBg(c.health_score)}`}>
               {c.health_score}
@@ -117,6 +120,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [customers, setCustomers] = useState<any[]>([]);
+
+  // Fetch customers on mount
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      const result = await getCustomers();
+      if (result.data) {
+        setCustomers(result.data);
+      }
+    };
+    fetchCustomers();
+  }, []);
 
   // Protect dashboard routes
   useRequireAuth("/login");
@@ -171,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </nav>
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar collapsed={sidebarCollapsed} />
+        <Sidebar collapsed={sidebarCollapsed} customers={customers} />
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
