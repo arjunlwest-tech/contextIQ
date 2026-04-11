@@ -298,7 +298,7 @@ export default function CustomerDetailPage() {
               <Mail className="w-8 h-8 text-text-muted mx-auto mb-2" />
               <p className="text-text-muted text-sm">No emails yet for this customer.</p>
             </div>
-          ) : customerEmails.map((em: { id: string; subject: string; status: string; body: string }) => (
+          ) : customerEmails.map((em: { id: string; subject: string; status: string; body: string; opened_at?: string; clicked_at?: string }) => (
             <div key={em.id} className="bg-surface border border-border rounded-xl p-5">
               <div className="flex items-start justify-between mb-2">
                 <div>
