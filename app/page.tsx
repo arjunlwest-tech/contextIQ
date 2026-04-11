@@ -330,9 +330,9 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
-            <GlowButton primary href="/signup">
+            <MagneticButton primary href="/signup">
               Connect your stack — free
-            </GlowButton>
+            </MagneticButton>
             <motion.a 
               href="#features" 
               whileHover={{ scale: 1.02, borderColor: "#6366F1" }}
