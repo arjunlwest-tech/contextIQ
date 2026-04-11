@@ -53,7 +53,7 @@ function AIChatWidget() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded bg-indigo flex items-center justify-center"><Zap className="w-3 h-3 text-white" /></div>
-              <span className="font-heading font-semibold text-sm">ContextIQ AI</span>
+              <span className="font-heading font-semibold text-sm">repulsora AI</span>
             </div>
             <button onClick={() => setOpen(false)} className="text-text-muted hover:text-text-primary"><X className="w-4 h-4" /></button>
           </div>
@@ -142,7 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="w-8 h-8 rounded-lg bg-indigo flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <span className="font-heading font-bold text-sm hidden sm:inline">ContextIQ</span>
+          <span className="font-heading font-bold text-sm hidden sm:inline">repulsora</span>
         </Link>
         <div className="flex items-center gap-1">
           {navItems.map(item => (

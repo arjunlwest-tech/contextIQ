@@ -48,7 +48,7 @@ export default function OnboardingPage() {
           <div className="w-8 h-8 rounded-lg bg-indigo flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <span className="font-heading font-bold">ContextIQ</span>
+          <span className="font-heading font-bold">repulsora</span>
         </div>
         <button onClick={() => router.push("/dashboard")} className="text-text-muted text-sm hover:text-text-secondary transition-colors">Skip setup</button>
       </div>

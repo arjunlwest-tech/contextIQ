@@ -4,7 +4,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
 
 export const metadata: Metadata = {
-  title: "ContextIQ — Autonomous Customer Success",
+  title: "repulsora — Autonomous Customer Success",
   description: "The autonomous customer success platform that replaces your entire CS team with AI.",
 };
 

@@ -63,7 +63,7 @@ export async function recommendPlaybook(signal: { customerName: string; healthSc
 export async function chatAssistant(question: string, context: string) {
   const r = await client.messages.create({
     model: MODEL, max_tokens: 1024,
-    messages: [{ role: "user", content: `You are ContextIQ AI assistant. Be concise and actionable.\nContext:\n${context}\n\nQuestion: ${question}` }],
+    messages: [{ role: "user", content: `You are repulsora AI assistant. Be concise and actionable.\nContext:\n${context}\n\nQuestion: ${question}` }],
   });
   return r.content[0].type === "text" ? r.content[0].text : "";
 }

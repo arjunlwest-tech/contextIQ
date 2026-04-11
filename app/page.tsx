@@ -193,7 +193,7 @@ export default function LandingPage() {
               <Zap className="w-4 h-4 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="font-heading font-bold text-lg leading-tight">ContextIQ</span>
+              <span className="font-heading font-bold text-lg leading-tight">repulsora</span>
               <span className="text-[10px] tracking-[0.2em] text-gold uppercase font-medium">by Vantage Suites</span>
             </div>
           </motion.div>
@@ -300,7 +300,7 @@ export default function LandingPage() {
                   <motion.div whileHover={{ scale: 1.2 }} className="w-3 h-3 rounded-full bg-danger/50 hover:bg-danger transition-colors" />
                   <motion.div whileHover={{ scale: 1.2 }} className="w-3 h-3 rounded-full bg-amber/50 hover:bg-amber transition-colors" />
                   <motion.div whileHover={{ scale: 1.2 }} className="w-3 h-3 rounded-full bg-emerald/50 hover:bg-emerald transition-colors" />
-                  <span className="ml-3 text-xs text-text-muted font-mono">app.contextiq.ai/dashboard</span>
+                  <span className="ml-3 text-xs text-text-muted font-mono">app.repulsora.ai/dashboard</span>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   {[
@@ -504,7 +504,7 @@ export default function LandingPage() {
                 <Star className="w-5 h-5 text-amber mb-4 fill-amber -mt-8 ml-12" />
               </motion.div>
               <p className="text-text-secondary text-lg leading-relaxed mb-6">
-                &ldquo;ContextIQ replaced our 3-person CS team. We went from reacting to churn after it happened to preventing it before the customer even knew they were at risk. Our retention went from 87% to 96%.&rdquo;
+                &ldquo;repulsora replaced our 3-person CS team. We went from reacting to churn after it happened to preventing it before the customer even knew they were at risk. Our retention went from 87% to 96%.&rdquo;
               </p>
               <div className="flex items-center gap-4">
                 <motion.div 
@@ -628,7 +628,7 @@ export default function LandingPage() {
             <span className="gradient-text">to slow response</span>
           </h2>
           <p className="text-text-secondary text-lg mb-10 max-w-xl mx-auto">
-            Your AI CS team deploys in minutes. Connect your stack, and ContextIQ starts acting immediately.
+            Your AI CS team deploys in minutes. Connect your stack, and repulsora starts acting immediately.
           </p>
           <motion.div 
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
@@ -668,7 +668,7 @@ export default function LandingPage() {
                   <Zap className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-heading font-bold text-xl leading-tight">ContextIQ</span>
+                  <span className="font-heading font-bold text-xl leading-tight">repulsora</span>
                   <span className="text-[10px] tracking-[0.2em] text-gold uppercase font-medium">by Vantage Suites</span>
                 </div>
               </motion.div>
@@ -695,22 +695,31 @@ export default function LandingPage() {
             <div>
               <h4 className="font-heading font-semibold text-sm mb-4">Company</h4>
               <ul className="space-y-2 text-sm text-text-muted">
-                {["About", "Blog", "Careers", "Contact"].map(item => (
-                  <li key={item}>
-                    <motion.a 
-                      href="#" 
-                      className="hover:text-text-primary transition-colors"
-                      whileHover={{ x: 2 }}
-                    >
-                      {item}
-                    </motion.a>
-                  </li>
-                ))}
+                <li>
+                  <motion.a 
+                    href="mailto:vantagesuitesofficial@gmail.com" 
+                    className="hover:text-text-primary transition-colors"
+                    whileHover={{ x: 2 }}
+                  >
+                    vantagesuitesofficial@gmail.com
+                  </motion.a>
+                </li>
+                <li>
+                  <motion.a 
+                    href="https://instagram.com/vantagesuites" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-text-primary transition-colors"
+                    whileHover={{ x: 2 }}
+                  >
+                    @vantagesuites
+                  </motion.a>
+                </li>
               </ul>
             </div>
           </div>
           <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-text-muted text-xs">&copy; 2026 ContextIQ. All rights reserved.</p>
+            <p className="text-text-muted text-xs">&copy; 2026 repulsora. All rights reserved.</p>
             <div className="flex items-center gap-6 text-xs text-text-muted">
               {["Privacy", "Terms", "Security"].map(item => (
                 <motion.a 

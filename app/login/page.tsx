@@ -51,7 +51,7 @@ export default function LoginPage() {
             </div>
           </Link>
           <h1 className="font-heading text-2xl font-bold mb-2">Welcome back</h1>
-          <p className="text-text-secondary text-sm">Log in to your ContextIQ dashboard</p>
+          <p className="text-text-secondary text-sm">Log in to your repulsora dashboard</p>
         </div>
         <div className="space-y-3 mb-6">
           <button 

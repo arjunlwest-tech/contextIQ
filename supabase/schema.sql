@@ -1,4 +1,4 @@
--- ContextIQ Database Schema
+-- repulsora Database Schema
 -- Run this in your Supabase SQL editor
 
 -- Companies
