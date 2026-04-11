@@ -12,15 +12,49 @@ function AnimatedCounter({ target, prefix = "", suffix = "" }: { target: number;
 }
 
 function FloatingCard({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+  const [glarePosition, setGlarePosition] = useState({ x: 50, y: 50 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    setRotateX((y - 0.5) * -20);
+    setRotateY((x - 0.5) * 20);
+    setGlarePosition({ x: x * 100, y: y * 100 });
+  };
+
+  const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+    setGlarePosition({ x: 50, y: 50 });
+  };
+
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, y: 50, rotateX: -10 }}
       animate={{ opacity: 1, y: 0, rotateX: 0 }}
       transition={{ delay, duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-      whileHover={{ y: -10, rotateX: 5, scale: 1.02 }}
-      className={`${className}`}
-      style={{ transformStyle: "preserve-3d", perspective: "1000px" }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className={`${className} relative overflow-hidden`}
+      style={{ 
+        transformStyle: "preserve-3d", 
+        perspective: "1000px",
+        transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px)`
+      }}
     >
+      {/* Glare effect */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{
+          background: `radial-gradient(circle at ${glarePosition.x}% ${glarePosition.y}%, rgba(255,255,255,0.15) 0%, transparent 60%)`
+        }}
+      />
       {children}
     </motion.div>
   );
@@ -41,31 +75,59 @@ function RevealSection({ children, className = "" }: { children: React.ReactNode
   );
 }
 
-function GlowButton({ children, primary = false, href = "#", className = "" }: { children: React.ReactNode; primary?: boolean; href?: string; className?: string }) {
+function MagneticButton({ children, primary = false, href = "#", className = "" }: { children: React.ReactNode; primary?: boolean; href?: string; className?: string }) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) * 0.3;
+    const y = (e.clientY - rect.top - rect.height / 2) * 0.3;
+    setPosition({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setPosition({ x: 0, y: 0 });
+    setIsHovered(false);
+  };
+
   return (
     <Link href={href}>
       <motion.button
+        ref={buttonRef}
         onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.98 }}
-        className={`relative overflow-hidden px-8 py-4 rounded-xl font-medium text-base flex items-center gap-2 transition-all duration-300 ${
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        animate={{ x: position.x, y: position.y }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        whileTap={{ scale: 0.95 }}
+        className={`relative overflow-hidden px-8 py-4 rounded-xl font-medium text-base flex items-center gap-2 transition-all duration-300 group ${
           primary 
-            ? "bg-indigo text-white shadow-lg shadow-indigo/30" 
-            : "border border-border bg-surface text-text-secondary hover:text-text-primary"
-        } ${isHovered && primary ? "shadow-xl shadow-indigo/50" : ""} ${className}`}
+            ? "bg-gradient-to-r from-indigo to-indigo-dark text-white shadow-lg shadow-indigo/30 hover:shadow-indigo/50" 
+            : "border border-border bg-surface text-text-secondary hover:text-text-primary hover:border-indigo/50"
+        } ${className}`}
       >
-        {isHovered && primary && (
+        {/* Shimmer effect */}
+        {primary && (
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-indigo-light to-indigo"
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            transition={{ duration: 0.3 }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+            initial={{ x: "-200%" }}
+            animate={isHovered ? { x: "200%" } : { x: "-200%" }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
           />
         )}
         <span className="relative z-10">{children}</span>
-        {isHovered && primary && <Sparkles className="w-4 h-4 relative z-10" />}
+        {isHovered && primary && (
+          <motion.span
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative z-10"
+          >
+            <Sparkles className="w-4 h-4" />
+          </motion.span>
+        )}
       </motion.button>
     </Link>
   );
