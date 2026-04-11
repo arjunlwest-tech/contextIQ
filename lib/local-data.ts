@@ -113,13 +113,13 @@ export function getLocalData() {
     return JSON.parse(stored);
   }
   
-  // Initialize with demo data
+  // Initialize with EMPTY data - user creates their own
   const initialData = {
-    customers: generateDemoCustomers(),
-    playbooks: generateDemoPlaybooks(),
-    dashboardStats: generateDemoStats(),
-    aiActions: generateDemoAIActions(),
-    emails: generateDemoEmails(),
+    customers: [],
+    playbooks: [],
+    dashboardStats: null,
+    aiActions: [],
+    emails: [],
   };
   
   localStorage.setItem(DATA_KEY, JSON.stringify(initialData));
@@ -162,13 +162,10 @@ export function getPlaybooks(): Playbook[] {
   return getLocalData().playbooks || [];
 }
 
-// Get dashboard stats
+// Get dashboard stats - REAL data only, no made up numbers
 export function getDashboardStats(): DashboardStats {
-  const data = getLocalData();
-  if (data.dashboardStats) return data.dashboardStats;
-  
   const customers = getCustomers();
-  const totalMRR = customers.reduce((sum, c) => sum + c.mrr, 0);
+  const totalMRR = customers.reduce((sum, c) => sum + (c.mrr || 0), 0);
   const avgHealth = customers.length > 0 
     ? customers.reduce((sum, c) => sum + c.health_score, 0) / customers.length 
     : 0;
@@ -179,10 +176,10 @@ export function getDashboardStats(): DashboardStats {
     totalMRR,
     avgHealthScore: Math.round(avgHealth),
     atRiskCustomers: atRisk,
-    mrrGrowth: 12,
-    customerGrowth: 8,
-    healthChange: -2,
-    riskChange: 5,
+    mrrGrowth: 0, // Only show real growth when there's data
+    customerGrowth: 0,
+    healthChange: 0,
+    riskChange: 0,
   };
 }
 
@@ -198,171 +195,39 @@ export function getEmails(): EmailCampaign[] {
 
 // Generate demo customers
 function generateDemoCustomers(): Customer[] {
-  return [
-    {
-      id: "cust_1",
-      name: "Sarah Chen",
-      email: "sarah@acme.com",
-      company: "Acme Corp",
-      mrr: 2500,
-      health_score: 92,
-      risk_level: "low",
-      last_activity: "2 hours ago",
-      created_at: "2023-01-15T00:00:00Z",
-      plan: "Enterprise",
-      arr: 30000,
-      nrr: 35000,
-      users: 45,
-      last_login: "2 hours ago",
-      usage_metrics: [
-        { metric: "API Calls", current: 125000, previous: 98000, change: 27.5 },
-        { metric: "Active Users", current: 42, previous: 38, change: 10.5 },
-        { metric: "Data Storage", current: 850, previous: 620, change: 37.1 },
-      ],
-      emails: [
-        { id: "em1", subject: "QBR Summary - Q4 2024", sent_at: "2024-01-10T10:00:00Z", opened_at: "2024-01-10T10:15:00Z", status: "opened" },
-        { id: "em2", subject: "New Features Announcement", sent_at: "2024-01-08T14:00:00Z", clicked_at: "2024-01-08T14:30:00Z", status: "clicked" },
-      ],
-      actions: [
-        { id: "act1", type: "expansion", description: "Upsold to Enterprise plan", impact: "+$1,200 MRR", created_at: "2024-01-05T00:00:00Z" },
-        { id: "act2", type: "risk", description: "Resolved integration issue", impact: "Prevented churn", created_at: "2024-01-03T00:00:00Z" },
-      ],
-      qbrs: [
-        { id: "qbr1", title: "Q4 2024 Business Review", scheduled_at: "2024-01-15T15:00:00Z", status: "scheduled" },
-      ],
-      notes: [
-        { id: "note1", content: "Key stakeholder is VP of Engineering. They love the API performance.", created_at: "2024-01-10T00:00:00Z" },
-      ],
-    },
-    {
-      id: "cust_2",
-      name: "Marcus Johnson",
-      email: "marcus@techflow.io",
-      company: "TechFlow",
-      mrr: 4800,
-      health_score: 78,
-      risk_level: "medium",
-      last_activity: "5 hours ago",
-      created_at: "2023-03-20T00:00:00Z",
-      plan: "Growth",
-      arr: 57600,
-      nrr: 62400,
-      users: 128,
-      last_login: "5 hours ago",
-      usage_metrics: [
-        { metric: "API Calls", current: 89000, previous: 95000, change: -6.3 },
-        { metric: "Active Users", current: 118, previous: 125, change: -5.6 },
-        { metric: "Data Storage", current: 1200, previous: 1150, change: 4.3 },
-      ],
-      emails: [
-        { id: "em3", subject: "Usage Alert: Approaching Limit", sent_at: "2024-01-09T09:00:00Z", opened_at: "2024-01-09T09:30:00Z", status: "opened" },
-      ],
-      actions: [
-        { id: "act3", type: "risk", description: "Sent usage limit warning", impact: "Awaiting response", created_at: "2024-01-09T00:00:00Z" },
-      ],
-      qbrs: [],
-      notes: [
-        { id: "note2", content: "Concerned about pricing. Mentioned competitor offering lower rates.", created_at: "2024-01-08T00:00:00Z" },
-      ],
-    },
-  ];
+  // NO DEMO CUSTOMERS - User creates their own
+  return [];
 }
 
 // Generate demo playbooks
 function generateDemoPlaybooks(): Playbook[] {
-  return [
-    {
-      id: "pb1",
-      name: "High-Risk Customer Recovery",
-      description: "Automated sequence for at-risk customers showing churn signals",
-      trigger: "Health Score < 60",
-      status: "active",
-      steps: 5,
-      created_at: "2024-01-01T00:00:00Z",
-      last_triggered: "2 hours ago",
-      success_rate: 68,
-    },
-    {
-      id: "pb2",
-      name: "Expansion Opportunity",
-      description: "Identifies and nurtures customers ready for upgrade",
-      trigger: "Usage > 80% of plan",
-      status: "active",
-      steps: 3,
-      created_at: "2024-01-02T00:00:00Z",
-      last_triggered: "5 hours ago",
-      success_rate: 82,
-    },
-    {
-      id: "pb3",
-      name: "New Customer Onboarding",
-      description: "Guides new customers to first value milestone",
-      trigger: "Account created",
-      status: "active",
-      steps: 7,
-      created_at: "2024-01-03T00:00:00Z",
-      last_triggered: "1 day ago",
-      success_rate: 91,
-    },
-  ];
+  // NO DEMO PLAYBOOKS - User creates their own
+  return [];
 }
 
 // Generate demo stats
 function generateDemoStats(): DashboardStats {
+  // NO MADE UP STATS - Start at 0
   return {
-    totalCustomers: 156,
-    totalMRR: 523400,
-    avgHealthScore: 84,
-    atRiskCustomers: 12,
-    mrrGrowth: 12,
-    customerGrowth: 8,
-    healthChange: -2,
-    riskChange: 5,
+    totalCustomers: 0,
+    totalMRR: 0,
+    avgHealthScore: 0,
+    atRiskCustomers: 0,
+    mrrGrowth: 0,
+    customerGrowth: 0,
+    healthChange: 0,
+    riskChange: 0,
   };
 }
 
 // Generate demo AI actions
 function generateDemoAIActions(): AIAction[] {
-  return [
-    {
-      id: "ai1",
-      customer: "TechFlow",
-      action: "Sent expansion offer email",
-      impact: "+$2,400 ARR potential",
-      priority: "high",
-      timestamp: "10 min ago",
-    },
-    {
-      id: "ai2",
-      customer: "Acme Corp",
-      action: "Scheduled QBR for next week",
-      impact: "Retention boost",
-      priority: "medium",
-      timestamp: "1 hour ago",
-    },
-  ];
+  // NO DEMO AI ACTIONS - Only real AI actions from usage
+  return [];
 }
 
 // Generate demo emails
 function generateDemoEmails(): EmailCampaign[] {
-  return [
-    {
-      id: "em1",
-      subject: "QBR Summary - Q4 2024",
-      recipient_count: 156,
-      open_rate: 68,
-      click_rate: 42,
-      status: "sent",
-      sent_at: "2024-01-10T10:00:00Z",
-    },
-    {
-      id: "em2",
-      subject: "New Features Announcement",
-      recipient_count: 156,
-      open_rate: 72,
-      click_rate: 38,
-      status: "sent",
-      sent_at: "2024-01-08T14:00:00Z",
-    },
-  ];
+  // NO DEMO EMAILS - Only real emails sent by user
+  return [];
 }

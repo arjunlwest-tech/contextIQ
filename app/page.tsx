@@ -143,27 +143,6 @@ function TypewriterText({ text, className = "" }: { text: string; className?: st
   );
 }
 
-function LiveChurnCounter() {
-  const [amount, setAmount] = useState(127500);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAmount(prev => prev + Math.floor(Math.random() * 2500) + 500);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-  return (
-    <motion.span 
-      key={amount}
-      initial={{ scale: 1.1, color: "#10B981" }}
-      animate={{ scale: 1, color: "#10B981" }}
-      className="font-mono text-emerald text-4xl md:text-5xl font-bold"
-    >
-      ${amount.toLocaleString()}
-    </motion.span>
-  );
-}
-
-
 const features = [
   { icon: Shield, title: "Churn Prediction", desc: "AI monitors usage patterns, support sentiment, and engagement signals to predict churn before it happens — with 94% accuracy.", color: "from-red-500 to-orange-500", glow: "glow-red" },
   { icon: Mail, title: "Autonomous Outreach", desc: "Personalized emails drafted and sent by AI at the perfect moment. No human drafting, no delays, no missed windows.", color: "from-indigo-500 to-purple-500", glow: "glow-indigo" },
@@ -420,13 +399,6 @@ export default function LandingPage() {
       </section>
 
       {/* Live Counter */}
-      <section className="py-12 border-y border-border">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-text-muted text-sm mb-2 font-mono">CHURN PREVENTED THIS WEEK</p>
-          <LiveChurnCounter />
-        </div>
-      </section>
-
       {/* Stats */}
       <section className="py-20 px-6 relative">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
