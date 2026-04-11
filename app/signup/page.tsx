@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Zap, Mail } from "lucide-react";
+import { Zap, Mail, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 // Force dynamic rendering to avoid build-time env var issues
