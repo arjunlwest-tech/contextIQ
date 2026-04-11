@@ -1,45 +1,89 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+// Local data storage - no Supabase needed
+// This file uses a mock data approach for the MVP
+
+// Mock data store (in-memory for server actions)
+let mockCustomers = [
+  {
+    id: "cust_1",
+    name: "Sarah Chen",
+    email: "sarah@acme.com",
+    company: "Acme Corp",
+    mrr: 2500,
+    health_score: 92,
+    risk_level: "low",
+    last_activity: "2 hours ago",
+    created_at: "2023-01-15T00:00:00Z",
+    plan: "Enterprise",
+    status: "active",
+    arr: 30000,
+    nrr: 35000,
+    users: 45,
+    last_login: "2 hours ago",
+    usage_metrics: [
+      { metric: "API Calls", current: 125000, previous: 98000, change: 27.5 },
+      { metric: "Active Users", current: 42, previous: 38, change: 10.5 },
+      { metric: "Data Storage", current: 850, previous: 620, change: 37.1 },
+    ],
+    emails: [
+      { id: "em1", subject: "QBR Summary - Q4 2024", sent_at: "2024-01-10T10:00:00Z", opened_at: "2024-01-10T10:15:00Z", status: "opened" },
+      { id: "em2", subject: "New Features Announcement", sent_at: "2024-01-08T14:00:00Z", clicked_at: "2024-01-08T14:30:00Z", status: "clicked" },
+    ],
+    actions: [
+      { id: "act1", type: "expansion", description: "Upsold to Enterprise plan", impact: "+$1,200 MRR", created_at: "2024-01-05T00:00:00Z" },
+      { id: "act2", type: "risk", description: "Resolved integration issue", impact: "Prevented churn", created_at: "2024-01-03T00:00:00Z" },
+    ],
+    qbrs: [
+      { id: "qbr1", title: "Q4 2024 Business Review", scheduled_at: "2024-01-15T15:00:00Z", status: "scheduled" },
+    ],
+    notes: [
+      { id: "note1", content: "Key stakeholder is VP of Engineering. They love the API performance.", created_at: "2024-01-10T00:00:00Z" },
+    ],
+  },
+  {
+    id: "cust_2",
+    name: "Marcus Johnson",
+    email: "marcus@techflow.io",
+    company: "TechFlow",
+    mrr: 4800,
+    health_score: 78,
+    risk_level: "medium",
+    last_activity: "5 hours ago",
+    created_at: "2023-03-20T00:00:00Z",
+    plan: "Growth",
+    status: "active",
+    arr: 57600,
+    nrr: 62400,
+    users: 128,
+    last_login: "5 hours ago",
+    usage_metrics: [
+      { metric: "API Calls", current: 89000, previous: 95000, change: -6.3 },
+      { metric: "Active Users", current: 118, previous: 125, change: -5.6 },
+      { metric: "Data Storage", current: 1200, previous: 1150, change: 4.3 },
+    ],
+    emails: [
+      { id: "em3", subject: "Usage Alert: Approaching Limit", sent_at: "2024-01-09T09:00:00Z", opened_at: "2024-01-09T09:30:00Z", status: "opened" },
+    ],
+    actions: [
+      { id: "act3", type: "risk", description: "Sent usage limit warning", impact: "Awaiting response", created_at: "2024-01-09T00:00:00Z" },
+    ],
+    qbrs: [],
+    notes: [
+      { id: "note2", content: "Concerned about pricing. Mentioned competitor offering lower rates.", created_at: "2024-01-08T00:00:00Z" },
+    ],
+  },
+];
 
 // Customer Actions
 export async function getCustomers() {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated", data: null };
-  
-  const { data: userData } = await supabase
-    .from("users")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-    
-  if (!userData?.company_id) return { error: "No company", data: null };
-  
-  const { data, error } = await supabase
-    .from("customers")
-    .select("*")
-    .eq("company_id", userData.company_id)
-    .order("health_score", { ascending: true });
-    
-  return { data, error: error?.message };
+  // Return mock data - no auth needed
+  return { data: mockCustomers, error: null };
 }
 
 export async function getCustomerById(id: string) {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated", data: null };
-  
-  const { data, error } = await supabase
-    .from("customers")
-    .select(`*, health_events(*), ai_actions(*), emails(*)`)
-    .eq("id", id)
-    .single();
-    
-  return { data, error: error?.message };
+  const customer = mockCustomers.find(c => c.id === id);
+  return { data: customer || null, error: null };
 }
 
 export async function createCustomer(customer: {
@@ -49,234 +93,142 @@ export async function createCustomer(customer: {
   plan: string;
   health_score?: number;
 }) {
-  const supabase = await createClient();
+  const newCustomer = {
+    id: "cust_" + Date.now(),
+    ...customer,
+    health_score: customer.health_score || 85,
+    status: "active",
+    last_activity: new Date().toISOString(),
+    risk_level: "low" as const,
+    company: customer.email.split("@")[1]?.split(".")[0] || "Unknown",
+    arr: customer.mrr * 12,
+    nrr: customer.mrr * 12 * 1.2,
+    users: Math.floor(Math.random() * 50) + 5,
+    last_login: "Just now",
+    created_at: new Date().toISOString(),
+    usage_metrics: [],
+    emails: [],
+    actions: [],
+    qbrs: [],
+    notes: [],
+  };
   
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated", data: null };
-  
-  const { data: userData } = await supabase
-    .from("users")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-    
-  if (!userData?.company_id) return { error: "No company", data: null };
-  
-  const { data, error } = await supabase
-    .from("customers")
-    .insert({
-      ...customer,
-      company_id: userData.company_id,
-      health_score: customer.health_score || 85,
-      status: "active",
-      last_activity: new Date().toISOString(),
-    })
-    .select()
-    .single();
-    
-  revalidatePath("/dashboard/customers");
-  return { data, error: error?.message };
+  mockCustomers.push(newCustomer);
+  return { data: newCustomer, error: null };
 }
 
 // Statistics Actions
 export async function getDashboardStats() {
-  const supabase = await createClient();
+  // Calculate stats from mock data - no auth needed
+  const atRisk = mockCustomers.filter(c => c.health_score < 40).length;
+  const expansionReady = mockCustomers.filter(c => c.health_score >= 80).length;
+  const mrr = mockCustomers.reduce((sum, c) => sum + c.mrr, 0);
+  const totalCustomers = mockCustomers.length;
   
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated", data: null };
-  
-  const { data: userData } = await supabase
-    .from("users")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-    
-  if (!userData?.company_id) {
-    // Return default stats if no company yet
-    return {
-      data: {
-        totalCustomers: 0,
-        atRisk: 0,
-        expansionReady: 0,
-        mrr: 0,
-        nrr: 0,
-        agentActions: 0,
-        emailsDrafted: 0,
-        qbrsGenerated: 0,
-      }
-    };
-  }
-  
-  // Get customers count
-  const { count: totalCustomers } = await supabase
-    .from("customers")
-    .select("*", { count: "exact", head: true })
-    .eq("company_id", userData.company_id);
-    
-  // Get at-risk customers
-  const { count: atRisk } = await supabase
-    .from("customers")
-    .select("*", { count: "exact", head: true })
-    .eq("company_id", userData.company_id)
-    .lt("health_score", 40);
-    
-  // Get expansion ready customers
-  const { count: expansionReady } = await supabase
-    .from("customers")
-    .select("*", { count: "exact", head: true })
-    .eq("company_id", userData.company_id)
-    .gte("health_score", 80);
-    
-  // Get MRR
-  const { data: mrrData } = await supabase
-    .from("customers")
-    .select("mrr")
-    .eq("company_id", userData.company_id);
-    
-  const mrr = mrrData?.reduce((sum, c) => sum + (c.mrr || 0), 0) || 0;
-    
-  // Get AI actions count - fetch customer IDs first
-  const { data: customerIds } = await supabase
-    .from("customers")
-    .select("id")
-    .eq("company_id", userData.company_id);
-  
-  const customerIdList = customerIds?.map(c => c.id) || [];
-  
-  let agentActions = 0;
-  if (customerIdList.length > 0) {
-    const result = await supabase
-      .from("ai_actions")
-      .select("*", { count: "exact", head: true })
-      .in("customer_id", customerIdList);
-    agentActions = result.count || 0;
-  }
-    
-  // Get emails drafted
-  let emailsDrafted = 0;
-  if (customerIdList.length > 0) {
-    const result = await supabase
-      .from("emails")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "draft")
-      .in("customer_id", customerIdList);
-    emailsDrafted = result.count || 0;
-  }
-    
   return {
     data: {
-      totalCustomers: totalCustomers || 0,
-      atRisk: atRisk || 0,
-      expansionReady: expansionReady || 0,
+      totalCustomers,
+      atRisk,
+      expansionReady,
       mrr,
       nrr: mrr * 12,
-      agentActions: agentActions || 0,
-      emailsDrafted: emailsDrafted || 0,
-      qbrsGenerated: 0, // Will calculate from ai_actions
+      agentActions: 12,
+      emailsDrafted: 5,
+      qbrsGenerated: 3,
     }
   };
 }
 
 // AI Actions
 export async function getAIActions() {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated", data: null };
-  
-  const { data: userData } = await supabase
-    .from("users")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-    
-  if (!userData?.company_id) return { error: "No company", data: null };
-  
-  // Get customer IDs first
-  const { data: customerIds } = await supabase
-    .from("customers")
-    .select("id")
-    .eq("company_id", userData.company_id);
-  
-  const customerIdList = customerIds?.map(c => c.id) || [];
-  
-  if (customerIdList.length === 0) {
-    return { data: [], error: null };
-  }
-  
-  const { data, error } = await supabase
-    .from("ai_actions")
-    .select(`*, customers(name)`)
-    .in("customer_id", customerIdList)
-    .order("created_at", { ascending: false })
-    .limit(20);
-    
-  return { data, error: error?.message };
+  // Return mock AI actions - matches demo-data.ts AIAction interface
+  const mockAIActions = [
+    {
+      id: "ai_01",
+      customer_id: "cust_01",
+      type: "email_sent" as const,
+      status: "completed" as const,
+      payload: "Churn rescue outreach",
+      result: "Email delivered",
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: "ai_02",
+      customer_id: "cust_03",
+      type: "qbr_generated" as const,
+      status: "completed" as const,
+      payload: "QBR for Globex Inc",
+      result: "QBR generated",
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+    },
+  ];
+  return { data: mockAIActions, error: null };
 }
 
 // Playbooks
 export async function getPlaybooks() {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated", data: null };
-  
-  const { data: userData } = await supabase
-    .from("users")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-    
-  if (!userData?.company_id) return { error: "No company", data: null };
-  
-  const { data, error } = await supabase
-    .from("playbooks")
-    .select("*")
-    .eq("company_id", userData.company_id)
-    .order("created_at", { ascending: false });
-    
-  return { data, error: error?.message };
+  // Return mock playbooks - matches demo-data.ts Playbook interface
+  const mockPlaybooks = [
+    {
+      id: "pb_01",
+      company_id: "comp_01",
+      name: "Churn Rescue",
+      trigger_type: "health_score",
+      trigger_value: "< 40",
+      actions_json: [{ step: 1, action: "Send personalized check-in email" }, { step: 2, action: "Create urgent support ticket" }, { step: 3, action: "Schedule executive call" }, { step: 4, action: "Offer temporary discount" }],
+      active: true,
+      customers_in_playbook: 3,
+      success_rate: 68,
+    },
+    {
+      id: "pb_02",
+      company_id: "comp_01",
+      name: "Expansion Play",
+      trigger_type: "feature_limit",
+      trigger_value: "hit 3x in 7 days",
+      actions_json: [{ step: 1, action: "Send upsell email with pricing" }, { step: 2, action: "Create opportunity in CRM" }, { step: 3, action: "Assign to account manager" }],
+      active: true,
+      customers_in_playbook: 2,
+      success_rate: 45,
+    },
+    {
+      id: "pb_03",
+      company_id: "comp_01",
+      name: "Renewal Sequence",
+      trigger_type: "contract_end",
+      trigger_value: "90 days before",
+      actions_json: [{ step: 1, action: "Generate QBR document" }, { step: 2, action: "Send renewal email with terms" }, { step: 3, action: "Follow up after 7 days" }, { step: 4, action: "Escalate if no response" }],
+      active: true,
+      customers_in_playbook: 4,
+      success_rate: 72,
+    },
+  ];
+  return { data: mockPlaybooks, error: null };
 }
 
 // Emails
 export async function getEmails(status?: string) {
-  const supabase = await createClient();
+  // Return mock emails from customer data - no auth needed
+  let emails: any[] = [];
   
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated", data: null };
+  mockCustomers.forEach(customer => {
+    if (customer.emails) {
+      customer.emails.forEach((email: any) => {
+        if (!status || email.status === status) {
+          emails.push({
+            ...email,
+            customer_name: customer.name,
+            customer_id: customer.id,
+          });
+        }
+      });
+    }
+  });
   
-  const { data: userData } = await supabase
-    .from("users")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-    
-  if (!userData?.company_id) return { error: "No company", data: null };
+  // Sort by sent_at descending
+  emails.sort((a, b) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime());
   
-  // Get customer IDs first
-  const { data: customerIds } = await supabase
-    .from("customers")
-    .select("id")
-    .eq("company_id", userData.company_id);
-  
-  const customerIdList = customerIds?.map(c => c.id) || [];
-  
-  if (customerIdList.length === 0) {
-    return { data: [], error: null };
-  }
-  
-  let query = supabase
-    .from("emails")
-    .select(`*, customers(name)`)
-    .in("customer_id", customerIdList);
-    
-  if (status) {
-    query = query.eq("status", status);
-  }
-  
-  const { data, error } = await query.order("created_at", { ascending: false });
-    
-  return { data, error: error?.message };
+  return { data: emails, error: null };
 }
 
 // Onboarding - Create company
@@ -286,59 +238,46 @@ export async function createCompany(companyData: {
   industry?: string;
   size?: string;
 }) {
-  const supabase = await createClient();
+  // Mock company creation - no Supabase needed
+  const company = {
+    id: "comp_" + Date.now(),
+    ...companyData,
+    plan: "free",
+    created_at: new Date().toISOString(),
+  };
   
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated", data: null };
-  
-  // Create company
-  const { data: company, error: companyError } = await supabase
-    .from("companies")
-    .insert({
-      name: companyData.name,
-      website: companyData.website,
-      industry: companyData.industry,
-      size: companyData.size,
-      plan: "free",
-    })
-    .select()
-    .single();
-    
-  if (companyError) return { error: companyError.message, data: null };
-  
-  // Update user with company
-  const { error: userError } = await supabase
-    .from("users")
-    .update({ company_id: company.id })
-    .eq("id", user.id);
-    
-  if (userError) return { error: userError.message, data: null };
-  
-  revalidatePath("/dashboard");
   return { data: company, error: null };
 }
 
 // Integrations
 export async function getIntegrations() {
-  const supabase = await createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated", data: null };
-  
-  const { data: userData } = await supabase
-    .from("users")
-    .select("company_id")
-    .eq("id", user.id)
-    .single();
-    
-  if (!userData?.company_id) return { error: "No company", data: null };
-  
-  const { data, error } = await supabase
-    .from("integrations")
-    .select("*")
-    .eq("company_id", userData.company_id)
-    .order("connected_at", { ascending: false });
-    
-  return { data, error: error?.message };
+  // Return mock integrations - no auth needed
+  const mockIntegrations = [
+    {
+      id: "int1",
+      name: "Stripe",
+      type: "billing",
+      status: "connected",
+      connected_at: "2024-01-15T00:00:00Z",
+      description: "Payment processing and subscription management",
+    },
+    {
+      id: "int2", 
+      name: "HubSpot",
+      type: "crm",
+      status: "connected",
+      connected_at: "2024-01-10T00:00:00Z",
+      description: "Customer relationship management",
+    },
+    {
+      id: "int3",
+      name: "Slack",
+      type: "messaging", 
+      status: "disconnected",
+      connected_at: null,
+      description: "Team notifications and alerts",
+    },
+  ];
+  return { data: mockIntegrations, error: null };
 }
 

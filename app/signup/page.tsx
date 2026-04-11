@@ -31,13 +31,7 @@ export default function SignupPage() {
       return;
     }
     
-    if (!user?.confirmed_at) {
-      // Email confirmation required
-      setMessage("Check your email to confirm your account!");
-      setLoading(false);
-      return;
-    }
-    
+    // Successfully signed up - redirect to onboarding
     router.push("/onboarding");
   };
 

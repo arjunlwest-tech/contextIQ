@@ -1,117 +1,140 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { User, AuthError } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
+interface LocalUser {
+  id: string;
+  email: string;
+  created_at: string;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: LocalUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: AuthError | null; user: User | null }>;
-  signInWithOAuth: (provider: "google" | "github") => Promise<{ error: AuthError | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: Error | null; user: LocalUser | null }>;
+  signInWithOAuth: (provider: "google" | "github") => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Check if Supabase is configured
-const isSupabaseConfigured = () => {
-  return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const STORAGE_KEY = "repulsora_user";
+const USERS_KEY = "repulsora_users";
+
+// Get stored users
+const getStoredUsers = (): Record<string, { password: string; user: LocalUser }> => {
+  if (typeof window === "undefined") return {};
+  const stored = localStorage.getItem(USERS_KEY);
+  return stored ? JSON.parse(stored) : {};
+};
+
+// Save users
+const saveUsers = (users: Record<string, { password: string; user: LocalUser }>) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<LocalUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  
-  // Handle case where Supabase is not configured (e.g., during build)
-  const configured = isSupabaseConfigured();
-  const supabase = configured ? createClient() : null;
 
   useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    
-    // Check initial auth state
-    const getInitialUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-      } catch {
-        // Supabase not available
-        setUser(null);
+    // Check for stored session
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setUser(parsed);
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
-      setLoading(false);
-    };
-    getInitialUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+    }
+    setLoading(false);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
-    if (!supabase) {
-      return { error: new Error("Supabase not configured") as AuthError };
+    const users = getStoredUsers();
+    const userData = users[email];
+    
+    if (!userData) {
+      return { error: new Error("No account found with this email. Please sign up first.") };
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+    
+    if (userData.password !== password) {
+      return { error: new Error("Incorrect password. Please try again.") };
     }
-    return { error };
+    
+    // Set user in state and localStorage
+    setUser(userData.user);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(userData.user));
+    
+    return { error: null };
   };
 
   const signUp = async (email: string, password: string) => {
-    if (!supabase) {
-      return { error: new Error("Supabase not configured") as AuthError, user: null };
+    const users = getStoredUsers();
+    
+    if (users[email]) {
+      return { error: new Error("An account with this email already exists. Please sign in instead."), user: null };
     }
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      }
-    });
-    if (!error) {
-      setUser(data.user);
-    }
-    return { error, user: data.user };
+    
+    // Create new user
+    const newUser: LocalUser = {
+      id: "user_" + Date.now(),
+      email,
+      created_at: new Date().toISOString(),
+    };
+    
+    // Store user
+    users[email] = { password, user: newUser };
+    saveUsers(users);
+    
+    // Set as current user
+    setUser(newUser);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+    
+    return { error: null, user: newUser };
   };
 
   const signInWithOAuth = async (provider: "google" | "github") => {
-    if (!supabase) {
-      return { error: new Error("Authentication service not configured. Please check your environment variables (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY).") as AuthError };
+    // OAuth not supported in local mode - just create a mock user
+    const mockEmail = `demo@${provider}.com`;
+    const users = getStoredUsers();
+    
+    let userToUse: LocalUser;
+    
+    if (users[mockEmail]) {
+      userToUse = users[mockEmail].user;
+    } else {
+      userToUse = {
+        id: `user_${provider}_${Date.now()}`,
+        email: mockEmail,
+        created_at: new Date().toISOString(),
+      };
+      users[mockEmail] = { password: "oauth", user: userToUse };
+      saveUsers(users);
     }
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      }
-    });
-    return { error };
+    
+    setUser(userToUse);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(userToUse));
+    
+    return { error: null };
   };
 
   const signOut = async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
     setUser(null);
+    localStorage.removeItem(STORAGE_KEY);
     router.push("/login");
   };
 
   const refreshUser = async () => {
-    if (!supabase) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
+    // No-op for localStorage
   };
 
   return (
