@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -34,11 +35,13 @@ export default function LoginPage() {
 
   const handleOAuth = async (provider: "google" | "github") => {
     setError("");
+    setOauthLoading(provider);
     const { error } = await signInWithOAuth(provider);
     if (error) {
-      setError("OAuth failed. Please try again.");
+      setError(error.message || `${provider} sign in failed. Please try again.`);
+      setOauthLoading(null);
     }
-    // OAuth redirect happens automatically
+    // OAuth redirect happens automatically on success
   };
 
   return (
@@ -55,18 +58,26 @@ export default function LoginPage() {
         </div>
         <div className="space-y-3 mb-6">
           <button 
-            onClick={() => handleOAuth("google")} 
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 border border-border hover:border-border-light bg-surface rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+            onClick={() => handleOAuth("google")}
+            disabled={loading || oauthLoading !== null}
+            className="w-full flex items-center justify-center gap-3 border border-border hover:border-border-light hover:bg-surface/80 bg-surface rounded-lg px-4 py-2.5 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Chrome className="w-4 h-4" /> Continue with Google
+            {oauthLoading === "google" ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</>
+            ) : (
+              <><Chrome className="w-4 h-4" /> Continue with Google</>
+            )}
           </button>
           <button 
-            onClick={() => handleOAuth("github")} 
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 border border-border hover:border-border-light bg-surface rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+            onClick={() => handleOAuth("github")}
+            disabled={loading || oauthLoading !== null}
+            className="w-full flex items-center justify-center gap-3 border border-border hover:border-border-light hover:bg-surface/80 bg-surface rounded-lg px-4 py-2.5 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Github className="w-4 h-4" /> Continue with GitHub
+            {oauthLoading === "github" ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</>
+            ) : (
+              <><Github className="w-4 h-4" /> Continue with GitHub</>
+            )}
           </button>
         </div>
         <div className="relative mb-6">
