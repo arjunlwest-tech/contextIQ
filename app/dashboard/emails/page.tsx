@@ -1,16 +1,33 @@
 "use client";
-import { useState } from "react";
-import { Mail, Check, Edit, X, Eye, Send, Clock, Zap } from "lucide-react";
-import { DEMO_EMAILS, DEMO_CUSTOMERS, getHealthBg } from "@/lib/demo-data";
+import { useState, useEffect } from "react";
+import { Mail, Check, Edit, X, Eye, Send, Clock, Zap, Loader2 } from "lucide-react";
+import { getHealthBg } from "@/lib/demo-data";
+import { getEmails, getCustomers } from "@/app/actions/data";
 
 type Tab = "pending" | "sent" | "templates";
 
 export default function EmailsPage() {
   const [tab, setTab] = useState<Tab>("pending");
   const [autoSend, setAutoSend] = useState(false);
+  const [emails, setEmails] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const pendingEmails = DEMO_EMAILS.filter(e => e.status === "pending_approval" || e.status === "draft");
-  const sentEmails = DEMO_EMAILS.filter(e => e.status === "sent" || e.status === "opened" || e.status === "clicked");
+  useEffect(() => {
+    const fetchData = async () => {
+      const [emailsRes, customersRes] = await Promise.all([
+        getEmails(),
+        getCustomers()
+      ]);
+      if (emailsRes.data) setEmails(emailsRes.data);
+      if (customersRes.data) setCustomers(customersRes.data);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const pendingEmails = emails.filter(e => e.status === "pending_approval" || e.status === "draft");
+  const sentEmails = emails.filter(e => e.status === "sent" || e.status === "opened" || e.status === "clicked");
 
   const templates = [
     { id: "t1", name: "Churn Rescue Check-in", subject: "We noticed something — let's get back on track", category: "Churn Prevention" },
@@ -19,6 +36,14 @@ export default function EmailsPage() {
     { id: "t4", name: "Executive Escalation", subject: "Important update about your account", category: "Escalation" },
     { id: "t5", name: "Expansion Proposal", subject: "Ready to scale your usage?", category: "Expansion" },
   ];
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -54,7 +79,7 @@ export default function EmailsPage() {
               <p className="text-text-muted text-sm">No emails pending approval.</p>
             </div>
           ) : pendingEmails.map(em => {
-            const cust = DEMO_CUSTOMERS.find(c => c.id === em.customer_id);
+            const cust = customers.find(c => c.id === em.customer_id);
             return (
               <div key={em.id} className="bg-surface border border-border rounded-xl p-5">
                 <div className="flex items-start justify-between mb-3">
@@ -89,7 +114,7 @@ export default function EmailsPage() {
       {tab === "sent" && (
         <div className="space-y-3">
           {sentEmails.map(em => {
-            const cust = DEMO_CUSTOMERS.find(c => c.id === em.customer_id);
+            const cust = customers.find(c => c.id === em.customer_id);
             return (
               <div key={em.id} className="bg-surface border border-border rounded-xl p-5">
                 <div className="flex items-start justify-between mb-2">

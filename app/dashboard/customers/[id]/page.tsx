@@ -4,14 +4,16 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, Zap, Mail, FileText, Clock, Edit, Play, ToggleLeft, ToggleRight, Loader2, AlertTriangle, CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { DEMO_CUSTOMERS, DEMO_AI_ACTIONS, DEMO_EMAILS, DEMO_PLAYBOOKS, generateHealthTrend, getHealthBg, getHealthLabel } from "@/lib/demo-data";
+import { generateHealthTrend, getHealthBg, getHealthLabel } from "@/lib/demo-data";
+import { getCustomerById, getPlaybooks } from "@/app/actions/data";
 
 type Tab = "overview" | "timeline" | "emails" | "qbr";
 
 export default function CustomerDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const customer = DEMO_CUSTOMERS.find(c => c.id === id);
+  const [customer, setCustomer] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
   const [overrideAI, setOverrideAI] = useState(false);
   const [churnAnalysis, setChurnAnalysis] = useState<Record<string, unknown> | null>(null);
@@ -19,10 +21,40 @@ export default function CustomerDetailPage() {
   const [qbrData, setQbrData] = useState<Record<string, unknown> | null>(null);
   const [generatingQBR, setGeneratingQBR] = useState(false);
   const [showPlaybookMenu, setShowPlaybookMenu] = useState(false);
+  const [playbooks, setPlaybooks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchPlaybooks = async () => {
+      const result = await getPlaybooks();
+      if (result.data) {
+        setPlaybooks(result.data);
+      }
+    };
+    fetchPlaybooks();
+  }, []);
+
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      const result = await getCustomerById(id);
+      if (result.data) {
+        setCustomer(result.data);
+      }
+      setLoading(false);
+    };
+    fetchCustomer();
+  }, [id]);
 
   const healthTrend = customer ? generateHealthTrend(customer.health_score) : [];
-  const customerActions = DEMO_AI_ACTIONS.filter(a => a.customer_id === id);
-  const customerEmails = DEMO_EMAILS.filter(e => e.customer_id === id);
+  const customerActions = customer?.ai_actions || [];
+  const customerEmails = customer?.emails || [];
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo" />
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (customer && tab === "overview" && !churnAnalysis && !analyzing) {
@@ -126,7 +158,7 @@ export default function CustomerDetailPage() {
             </button>
             {showPlaybookMenu && (
               <div className="absolute right-0 top-full mt-1 w-56 bg-surface border border-border rounded-lg shadow-xl z-10 py-1">
-                {DEMO_PLAYBOOKS.map(pb => (
+                {playbooks.map(pb => (
                   <button key={pb.id} onClick={() => setShowPlaybookMenu(false)} className="w-full text-left px-3 py-2 text-sm hover:bg-surface-light transition-colors">
                     <span className="font-medium">{pb.name}</span>
                     <span className="text-xs text-text-muted block">{pb.trigger_type}: {pb.trigger_value}</span>

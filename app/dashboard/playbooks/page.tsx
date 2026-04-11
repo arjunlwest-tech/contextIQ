@@ -1,9 +1,20 @@
 "use client";
-import { useState } from "react";
-import { Zap, Play, Edit, Plus, ChevronRight, X, ArrowRight } from "lucide-react";
-import { DEMO_PLAYBOOKS } from "@/lib/demo-data";
+import { useState, useEffect } from "react";
+import { Zap, Play, Edit, Plus, ChevronRight, X, ArrowRight, Loader2 } from "lucide-react";
+import { getPlaybooks } from "@/app/actions/data";
 
-function FlowBuilder({ playbook, onClose }: { playbook: typeof DEMO_PLAYBOOKS[0]; onClose: () => void }) {
+interface Playbook {
+  id: string;
+  name: string;
+  trigger_type: string;
+  trigger_value: string;
+  active: boolean;
+  actions_json: { step: number; action: string }[];
+  customers_in_playbook: number;
+  success_rate: number;
+}
+
+function FlowBuilder({ playbook, onClose }: { playbook: Playbook; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-40 bg-base/80 backdrop-blur-sm flex items-center justify-center p-6">
       <div className="bg-surface border border-border rounded-xl w-full max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -43,7 +54,28 @@ function FlowBuilder({ playbook, onClose }: { playbook: typeof DEMO_PLAYBOOKS[0]
 }
 
 export default function PlaybooksPage() {
-  const [editingPb, setEditingPb] = useState<typeof DEMO_PLAYBOOKS[0] | null>(null);
+  const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingPb, setEditingPb] = useState<Playbook | null>(null);
+
+  useEffect(() => {
+    const fetchPlaybooks = async () => {
+      const result = await getPlaybooks();
+      if (result.data) {
+        setPlaybooks(result.data);
+      }
+      setLoading(false);
+    };
+    fetchPlaybooks();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -55,7 +87,7 @@ export default function PlaybooksPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {DEMO_PLAYBOOKS.map(pb => (
+        {playbooks.map(pb => (
           <div key={pb.id} className={`bg-surface border rounded-xl p-5 ${pb.active ? "border-border" : "border-border opacity-60"}`}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">

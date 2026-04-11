@@ -1,14 +1,28 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Filter } from "lucide-react";
-import { DEMO_CUSTOMERS, getHealthBg, getHealthLabel } from "@/lib/demo-data";
+import { Search, Filter, Loader2 } from "lucide-react";
+import { getHealthBg, getHealthLabel } from "@/lib/demo-data";
+import { getCustomers } from "@/app/actions/data";
 
 export default function CustomersPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "critical" | "at-risk" | "healthy">("all");
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = DEMO_CUSTOMERS.filter(c => {
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      const result = await getCustomers();
+      if (result.data) {
+        setCustomers(result.data);
+      }
+      setLoading(false);
+    };
+    fetchCustomers();
+  }, []);
+
+  const filtered = customers.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filter === "all" ||
       (filter === "critical" && c.health_score < 40) ||
@@ -16,6 +30,14 @@ export default function CustomersPage() {
       (filter === "healthy" && c.health_score >= 70);
     return matchesSearch && matchesFilter;
   });
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">

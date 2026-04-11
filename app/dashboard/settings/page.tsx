@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
-import { Building2, Plug, Bot, CreditCard, Users, Plus, RefreshCw } from "lucide-react";
-import { DEMO_INTEGRATIONS } from "@/lib/demo-data";
+import { useState, useEffect } from "react";
+import { Building2, Plug, Bot, CreditCard, Users, Plus, RefreshCw, Loader2 } from "lucide-react";
+import { getIntegrations } from "@/app/actions/data";
 
 type SettingsTab = "company" | "integrations" | "ai" | "billing" | "team";
 
@@ -34,6 +34,27 @@ export default function SettingsPage() {
     { email: "john@company.com", role: "Admin" },
     { email: "sarah@company.com", role: "Viewer" },
   ]);
+  const [integrations, setIntegrations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchIntegrations = async () => {
+      const result = await getIntegrations();
+      if (result.data) {
+        setIntegrations(result.data);
+      }
+      setLoading(false);
+    };
+    fetchIntegrations();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo" />
+      </div>
+    );
+  }
 
   const tabs: { id: SettingsTab; label: string; icon: typeof Building2 }[] = [
     { id: "company", label: "Company", icon: Building2 },
@@ -93,7 +114,7 @@ export default function SettingsPage() {
                   <h3 className="font-heading font-semibold text-sm mb-4">{group.category}</h3>
                   <div className="space-y-3">
                     {group.items.map(item => {
-                      const connected = DEMO_INTEGRATIONS.find(i => i.type === item.type);
+                      const connected = integrations.find(i => i.type === item.type);
                       return (
                         <div key={item.type} className="flex items-center justify-between p-3 bg-base rounded-lg border border-border">
                           <div className="flex items-center gap-3">

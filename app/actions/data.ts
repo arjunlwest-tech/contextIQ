@@ -318,3 +318,27 @@ export async function createCompany(companyData: {
   return { data: company, error: null };
 }
 
+// Integrations
+export async function getIntegrations() {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated", data: null };
+  
+  const { data: userData } = await supabase
+    .from("users")
+    .select("company_id")
+    .eq("id", user.id)
+    .single();
+    
+  if (!userData?.company_id) return { error: "No company", data: null };
+  
+  const { data, error } = await supabase
+    .from("integrations")
+    .select("*")
+    .eq("company_id", userData.company_id)
+    .order("connected_at", { ascending: false });
+    
+  return { data, error: error?.message };
+}
+
