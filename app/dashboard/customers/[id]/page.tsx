@@ -96,7 +96,7 @@ export default function CustomerDetailPage() {
         body: JSON.stringify({
           name: customer.name, company: customer.name, mrr: customer.mrr,
           healthScore: customer.health_score, metrics90d: healthTrend.slice(-10),
-          usageSummary: customer.usage_metrics.map(m => `${m.feature}: ${m.usage}% (${m.trend})`).join(", "),
+          usageSummary: customer.usage_metrics.map((m: { feature: string; usage: number; trend: string }) => `${m.feature}: ${m.usage}% (${m.trend})`).join(", "),
           supportSummary: `${customer.support_ticket_count} tickets, sentiment: ${customer.support_sentiment}`,
           winsSummary: customer.health_score > 50 ? "Stable usage in core features" : "Limited wins this quarter",
           risksSummary: customer.health_score < 50 ? "Significant usage decline, disengagement risk" : "Minor usage fluctuations",
@@ -107,7 +107,7 @@ export default function CustomerDetailPage() {
     } catch {
       setQbrData({
         executiveSummary: `${customer.name} has a health score of ${customer.health_score}. ${customer.health_score < 40 ? "Immediate intervention is recommended." : "Continued monitoring is advised."}`,
-        keyMetrics: customer.usage_metrics.map(m => ({ label: m.feature, value: `${m.usage}%`, trend: m.trend })),
+        keyMetrics: customer.usage_metrics.map((m: { feature: string; usage: number; trend: string }) => ({ label: m.feature, value: `${m.usage}%`, trend: m.trend })),
         wins: ["Core feature adoption maintained", "Support response time improved"],
         risks: ["Usage trending down", "Email engagement declining"],
         recommendations: ["Schedule executive check-in", "Offer product training session"],
@@ -247,7 +247,7 @@ export default function CustomerDetailPage() {
             <h3 className="font-heading font-semibold text-sm mb-4">Health Score Breakdown</h3>
             <div className="space-y-4">
               {[
-                { label: "Product Usage", value: customer.usage_metrics.reduce((a, m) => a + m.usage, 0) / customer.usage_metrics.length, color: "bg-indigo" },
+                { label: "Product Usage", value: customer.usage_metrics.reduce((a: number, m: { usage: number }) => a + m.usage, 0) / customer.usage_metrics.length, color: "bg-indigo" },
                 { label: "Support Sentiment", value: customer.support_sentiment === "positive" || customer.support_sentiment === "very_positive" ? 85 : customer.support_sentiment === "neutral" ? 55 : customer.support_sentiment === "mixed" ? 40 : 20, color: "bg-amber" },
                 { label: "Email Engagement", value: customer.email_engagement, color: "bg-emerald" },
               ].map(metric => (
