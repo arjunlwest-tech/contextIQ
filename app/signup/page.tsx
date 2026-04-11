@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Zap, Mail, Github, Chrome, Loader2 } from "lucide-react";
+import { Zap, Mail } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 // Force dynamic rendering to avoid build-time env var issues
@@ -10,12 +10,11 @@ export const dynamic = "force-dynamic";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signUp, signInWithOAuth } = useAuth();
+  const { signUp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<string | null>(null);
-  const [error, setError] = useState("");
+    const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -42,18 +41,6 @@ export default function SignupPage() {
     router.push("/onboarding");
   };
 
-  const handleOAuth = async (provider: "google" | "github") => {
-    setError("");
-    setMessage("");
-    setOauthLoading(provider);
-    const { error } = await signInWithOAuth(provider);
-    if (error) {
-      setError(error.message || `${provider} sign up failed. Please try again.`);
-      setOauthLoading(null);
-    }
-    // OAuth redirect happens automatically on success
-  };
-
   return (
     <div className="min-h-screen bg-base flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
@@ -67,35 +54,6 @@ export default function SignupPage() {
           <p className="text-text-secondary text-sm">Start automating your customer success</p>
         </div>
 
-        <div className="space-y-3 mb-6">
-          <button 
-            onClick={() => handleOAuth("google")}
-            disabled={loading || oauthLoading !== null}
-            className="w-full flex items-center justify-center gap-3 border border-border hover:border-border-light hover:bg-surface/80 bg-surface rounded-lg px-4 py-2.5 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {oauthLoading === "google" ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</>
-            ) : (
-              <><Chrome className="w-4 h-4" /> Continue with Google</>
-            )}
-          </button>
-          <button 
-            onClick={() => handleOAuth("github")}
-            disabled={loading || oauthLoading !== null}
-            className="w-full flex items-center justify-center gap-3 border border-border hover:border-border-light hover:bg-surface/80 bg-surface rounded-lg px-4 py-2.5 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {oauthLoading === "github" ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</>
-            ) : (
-              <><Github className="w-4 h-4" /> Continue with GitHub</>
-            )}
-          </button>
-        </div>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-          <div className="relative flex justify-center text-xs"><span className="bg-base px-2 text-text-muted">or</span></div>
-        </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
           {error && (
