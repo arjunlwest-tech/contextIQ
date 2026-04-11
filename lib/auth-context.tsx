@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getInitialUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       setUser(session?.user ?? null);
     });
 
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithOAuth = async (provider: "google" | "github") => {
     if (!supabase) {
-      return { error: new Error("Supabase not configured") as AuthError };
+      return { error: new Error("Authentication service not configured. Please check your environment variables (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY).") as AuthError };
     }
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
