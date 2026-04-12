@@ -254,9 +254,9 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Log in</Link>
+            <Link href="/dashboard" className="text-sm text-text-secondary hover:text-text-primary transition-colors">Log in</Link>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link href="/signup" className="bg-indigo hover:bg-indigo-dark text-white text-sm px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo/30 hover:shadow-indigo/50">Get started</Link>
+              <Link href="/dashboard" className="bg-indigo hover:bg-indigo-dark text-white text-sm px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo/30 hover:shadow-indigo/50">Get started</Link>
             </motion.div>
           </div>
         </div>
@@ -309,7 +309,7 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
-            <MagneticButton primary href="/signup">
+            <MagneticButton primary href="/dashboard">
               Connect your stack — free
             </MagneticButton>
             <motion.a 
@@ -626,7 +626,7 @@ export default function LandingPage() {
                     ))}
                   </ul>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Link href="/signup" className={`block text-center py-3 rounded-xl text-sm font-medium transition-all ${plan.popular ? "bg-gradient-to-r from-indigo to-indigo-light text-white shadow-lg shadow-indigo/30 hover:shadow-indigo/50" : "border border-border hover:border-indigo text-text-secondary hover:text-indigo"}`}>
+                    <Link href="/dashboard" className={`block text-center py-3 rounded-xl text-sm font-medium transition-all ${plan.popular ? "bg-gradient-to-r from-indigo to-indigo-light text-white shadow-lg shadow-indigo/30 hover:shadow-indigo/50" : "border border-border hover:border-indigo text-text-secondary hover:text-indigo"}`}>
                       {plan.cta}
                     </Link>
                   </motion.div>
@@ -668,7 +668,7 @@ export default function LandingPage() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
             whileHover={{ scale: 1.02 }}
           >
-            <MagneticButton primary href="/signup" className="text-lg px-10 py-5">
+            <MagneticButton primary href="/dashboard" className="text-lg px-10 py-5">
               Connect your stack — free
             </MagneticButton>
           </motion.div>

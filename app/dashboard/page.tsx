@@ -1,238 +1,209 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { AlertTriangle, TrendingUp, DollarSign, Activity, Zap, ArrowRight, Loader2 } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { DEMO_AI_ACTIONS, getHealthBg, getHealthLabel } from "@/lib/demo-data";
-import { getDashboardStats, getCustomers, getAIActions } from "@/app/actions/data";
+import { 
+  TrendingUp, Shield, Zap, Check, ArrowUpRight, ArrowDownRight, 
+  Users, Mail, FileText, AlertTriangle, Plus, Search, Filter,
+  LayoutDashboard, PlayCircle, Settings, LogOut, ChevronRight
+} from "lucide-react";
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Cell
+} from "recharts";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import { 
+  DEMO_CUSTOMERS, DEMO_AI_ACTIONS, 
+  PORTFOLIO_HEALTH, MRR_AT_RISK, EXPANSION_OPPORTUNITIES,
+  getHealthColor, getHealthBg, getHealthLabel, generateHealthTrend
+} from "@/lib/demo-data";
+import { motion, AnimatePresence } from "framer-motion";
 
-function AnimatedNumber({ target, prefix = "", suffix = "", duration = 1500 }: { target: number; prefix?: string; suffix?: string; duration?: number }) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    let start = 0;
-    const step = target / (duration / 16);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) { setVal(target); clearInterval(timer); }
-      else setVal(Math.floor(start));
-    }, 16);
-    return () => clearInterval(timer);
-  }, [target, duration]);
-  return <span className="font-mono">{prefix}{val.toLocaleString()}{suffix}</span>;
-}
-
-function SkeletonCard() {
-  return <div className="bg-surface border border-border rounded-xl p-5"><div className="skeleton h-4 w-20 rounded mb-3" /><div className="skeleton h-8 w-32 rounded" /></div>;
+function MetricCard({ title, value, sub, trend, type = "default" }: any) {
+  const isPositive = trend === "up";
+  return (
+    <motion.div 
+      whileHover={{ y: -5 }}
+      className="bg-surface border border-border rounded-2xl p-6 relative overflow-hidden group transition-all hover:border-indigo/50 hover:shadow-2xl hover:shadow-indigo/10"
+    >
+      <div className="flex justify-between items-start mb-4">
+        <p className="text-xs font-mono text-text-muted uppercase tracking-widest">{title}</p>
+        <div className={`p-2 rounded-lg ${isPositive ? "bg-emerald/10 text-emerald" : "bg-danger/10 text-danger"}`}>
+          {isPositive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+        </div>
+      </div>
+      <h3 className="text-3xl font-bold mb-1 font-mono">{value}</h3>
+      <p className={`text-xs ${isPositive ? "text-emerald" : "text-danger"} font-medium`}>
+        {trend === "up" ? "+" : "-"}{sub} <span className="text-text-muted ml-1">vs last month</span>
+      </p>
+      
+      {/* Decorative gradient */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 group-hover:bg-indigo/10 transition-colors" />
+    </motion.div>
+  );
 }
 
 export default function DashboardPage() {
-  const [loading, setLoading] = useState(true);
-  const [actions, setActions] = useState(DEMO_AI_ACTIONS);
-  const [stats, setStats] = useState({
-    totalCustomers: 0,
-    atRisk: 0,
-    expansionReady: 0,
-    mrr: 0,
-    nrr: 0,
-    agentActions: 0,
-    emailsDrafted: 0,
-    qbrsGenerated: 0,
-  });
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("overview");
+  const criticalCustomers = useMemo(() => 
+    DEMO_CUSTOMERS.filter(c => c.health_score < 40).sort((a, b) => a.health_score - b.health_score),
+    []
+  );
 
-  useEffect(() => {
-    // Fetch real data from Supabase
-    const fetchData = async () => {
-      const statsResult = await getDashboardStats();
-      if (statsResult.data) {
-        setStats(statsResult.data);
-      }
-      
-      const customersResult = await getCustomers();
-      if (customersResult.data) {
-        setCustomers(customersResult.data);
-      }
-      
-      const actionsResult = await getAIActions();
-      if (actionsResult.data) {
-        setActions(actionsResult.data);
-      }
-      
-      setLoading(false);
-    };
-    
-    fetchData();
-    
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <SkeletonCard /> <SkeletonCard />
-        </div>
-      </div>
-    );
-  }
-
-  const pieData = [
-    { name: "Healthy", value: customers.filter(c => c.health_score >= 70).length, color: "#10B981" },
-    { name: "At Risk", value: customers.filter(c => c.health_score >= 40 && c.health_score < 70).length, color: "#F59E0B" },
-    { name: "Critical", value: customers.filter(c => c.health_score < 40).length, color: "#EF4444" },
-  ];
-
-  const criticalCustomers = customers.filter(c => c.health_score < 40);
+  const healthData = useMemo(() => generateHealthTrend(62, 30), []);
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-mono text-text-muted">PORTFOLIO HEALTH</span>
-            <Activity className="w-4 h-4 text-indigo" />
+    <div className="min-h-screen bg-base text-text-primary flex">
+      <DashboardSidebar />
+
+      {/* Main Content */}
+      <main className="flex-1 ml-64 p-8">
+        <header className="flex justify-between items-center mb-10">
+          <div>
+            <h1 className="text-3xl font-bold font-heading mb-1">Command Center</h1>
+            <p className="text-text-secondary text-sm">Your AI agents are monitoring <span className="text-indigo font-bold">{DEMO_CUSTOMERS.length}</span> active customers.</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-3xl font-bold font-mono text-emerald"><AnimatedNumber target={stats.totalCustomers} /></div>
-            <div className="w-16 h-16">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} innerRadius={18} outerRadius={28} dataKey="value" strokeWidth={0}>
-                    {pieData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+              <input 
+                type="text" 
+                placeholder="Search customers..." 
+                className="pl-10 pr-4 py-2 bg-surface border border-border rounded-xl text-sm focus:outline-none focus:border-indigo transition-all w-64"
+              />
+            </div>
+            <button className="bg-indigo text-white p-2 rounded-xl hover:bg-indigo-dark transition-colors shadow-lg shadow-indigo/20">
+              <Plus size={20} />
+            </button>
+          </div>
+        </header>
+
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <MetricCard title="Portfolio Health" value="62%" sub="4.2%" trend="up" />
+          <MetricCard title="MRR at Risk" value={`$${(MRR_AT_RISK / 1000).toFixed(1)}K`} sub="12%" trend="down" />
+          <MetricCard title="Expansion Pipe" value={`$${(EXPANSION_OPPORTUNITIES / 1000).toFixed(1)}K`} sub="8.5%" trend="up" />
+          <MetricCard title="AI Outreach Win" value="68%" sub="2.4%" trend="up" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Health Trend Chart */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="bg-surface border border-border rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="font-bold">Aggregate Health Trend</h3>
+                  <p className="text-xs text-text-muted">Prediction accuracy: 94%</p>
+                </div>
+                <div className="flex gap-2">
+                  <button className="text-[10px] px-2 py-1 bg-base border border-border rounded-lg font-bold">7D</button>
+                  <button className="text-[10px] px-2 py-1 bg-indigo text-white rounded-lg font-bold">30D</button>
+                </div>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={healthData}>
+                    <defs>
+                      <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366F1" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f1" vertical={false} />
+                    <XAxis dataKey="date" hide />
+                    <YAxis domain={['auto', 100]} hide />
+                    <Tooltip 
+                      contentStyle={{ background: '#fff', borderRadius: '12px', border: '1px solid #eee', fontSize: '12px' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="score" 
+                      stroke="#6366F1" 
+                      strokeWidth={3} 
+                      dot={false}
+                      animationDuration={1500}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Critical Customers */}
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-border flex justify-between items-center">
+                <h3 className="font-bold font-heading">High Priority Interventions</h3>
+                <Link href="/dashboard/customers" className="text-xs text-indigo font-bold hover:underline flex items-center gap-1">
+                  View Full List <ChevronRight size={12} />
+                </Link>
+              </div>
+              <div className="divide-y divide-border">
+                {criticalCustomers.map((customer) => (
+                  <motion.div 
+                    key={customer.id} 
+                    className="p-4 flex items-center gap-4 hover:bg-base transition-colors group"
+                    whileHover={{ x: 5 }}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-indigo/10 flex items-center justify-center font-bold text-indigo">
+                      {customer.name.substring(0, 1)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold">{customer.name}</p>
+                      <p className="text-[10px] text-text-muted font-mono uppercase">${customer.mrr.toLocaleString()} MRR</p>
+                    </div>
+                    <div className="text-right px-4">
+                      <div className={`text-sm font-mono font-bold ${getHealthColor(customer.health_score)}`}>
+                        {customer.health_score}
+                      </div>
+                      <div className="text-[10px] text-text-muted leading-none">Health</div>
+                    </div>
+                    <div className="px-2">
+                       <span className={`px-2 py-1 rounded-lg text-[10px] font-bold ${getHealthBg(customer.health_score)}`}>
+                        {getHealthLabel(customer.health_score)}
+                       </span>
+                    </div>
+                    <button className="p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-surface border border-border rounded-lg text-indigo hover:bg-indigo hover:text-white">
+                      <Zap size={14} />
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-3 text-xs">
-            {pieData.map(d => (
-              <span key={d.name} className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: d.color }} />{d.name}: {d.value}</span>
-            ))}
-          </div>
-        </div>
 
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-mono text-text-muted">MRR AT RISK</span>
-            <AlertTriangle className="w-4 h-4 text-amber" />
-          </div>
-          <div className="text-3xl font-bold font-mono text-amber"><AnimatedNumber target={stats.atRisk} suffix="" /></div>
-          <p className="text-xs text-danger mt-2">{criticalCustomers.length} customers in critical zone</p>
-        </div>
-
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-mono text-text-muted">EXPANSION OPPS</span>
-            <TrendingUp className="w-4 h-4 text-emerald" />
-          </div>
-          <div className="text-3xl font-bold font-mono text-emerald"><AnimatedNumber target={stats.expansionReady} suffix="" /></div>
-          <p className="text-xs text-emerald mt-2">2 upsell opportunities detected</p>
-        </div>
-
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-mono text-text-muted">REVENUE SAVED</span>
-            <DollarSign className="w-4 h-4 text-emerald" />
-          </div>
-          <div className="text-3xl font-bold font-mono text-emerald"><AnimatedNumber target={stats.mrr} prefix="$" /></div>
-          <p className="text-xs text-text-muted mt-2">This month by AI actions</p>
-        </div>
-      </div>
-
-      {/* Churn Alerts + Agent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Churn Alerts */}
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-heading font-semibold text-sm">Churn Alerts</h3>
-            <span className="text-xs font-mono text-danger">{criticalCustomers.length} active</span>
-          </div>
-          <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-hide">
-            {criticalCustomers.map(c => (
-              <div key={c.id} className="flex items-start gap-3 p-3 rounded-lg bg-danger/5 border border-danger/10">
-                <div className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold shrink-0 ${getHealthBg(c.health_score)}`}>
-                  {c.health_score}
+          {/* AI Activity Side Panel */}
+          <div className="space-y-8">
+            <div className="bg-gradient-to-br from-indigo to-indigo-dark text-white rounded-2xl p-6 shadow-xl shadow-indigo/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white animate-pulse" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <Link href={`/dashboard/customers/${c.id}`} className="text-sm font-medium hover:text-indigo transition-colors">{c.name}</Link>
-                  <p className="text-xs text-text-muted mt-0.5">
-                    {c.usage_metrics[0].usage}% usage · {c.days_since_last_login}d since login · AI drafting outreach now
-                  </p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Zap className="w-3 h-3 text-indigo" />
-                    <span className="text-xs text-indigo">Churn rescue playbook active</span>
+                <h3 className="font-bold font-heading">AI Status: Autonomous</h3>
+              </div>
+              <p className="text-sm text-indigo-light mb-6">Your CS agent is active. 3 rescuses in progress, 2 QBRs drafted this morning.</p>
+              <button className="w-full bg-white text-indigo font-bold py-3 rounded-xl text-xs hover:bg-white/90 transition-colors shadow-lg">
+                View Detailed Logs
+              </button>
+            </div>
+
+            <div className="bg-surface border border-border rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold">Recent AI Actions</h3>
+                <div className="w-2 h-2 rounded-full bg-emerald animate-ping" />
+              </div>
+              <div className="space-y-6">
+                {(DEMO_AI_ACTIONS || []).slice(0, 5).map((action, i) => (
+                  <div key={action.id} className="relative pl-6 before:absolute before:left-0 before:top-2 before:w-1 before:h-full before:bg-border last:before:hidden">
+                    <div className="absolute left-[-4px] top-1.5 w-3 h-3 rounded-full bg-indigo shadow-sm ring-4 ring-surface" />
+                    <p className="text-[10px] text-text-muted font-mono mb-1">{action.created_at.split('T')[1].substring(0, 5)}</p>
+                    <p className="text-sm font-medium leading-tight mb-1">{action.payload}</p>
+                    <p className="text-[10px] text-emerald font-bold uppercase tracking-wider">{action.result}</p>
                   </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-text-muted shrink-0 mt-1" />
+                ))}
               </div>
-            ))}
-            {customers.filter(c => c.health_score >= 40 && c.health_score < 70).slice(0, 2).map(c => (
-              <div key={c.id} className="flex items-start gap-3 p-3 rounded-lg bg-amber/5 border border-amber/10">
-                <div className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold shrink-0 ${getHealthBg(c.health_score)}`}>
-                  {c.health_score}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <Link href={`/dashboard/customers/${c.id}`} className="text-sm font-medium hover:text-indigo transition-colors">{c.name}</Link>
-                  <p className="text-xs text-text-muted mt-0.5">Health declining · Monitoring closely</p>
-                </div>
-              </div>
-            ))}
+            </div>
           </div>
         </div>
-
-        {/* Agent Activity */}
-        <div className="bg-surface border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-heading font-semibold text-sm">Agent Activity</h3>
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald animate-pulse-dot" /><span className="text-xs font-mono text-emerald">Live</span></div>
-          </div>
-          <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-hide">
-            {actions.map(a => {
-              const cust = customers.find(c => c.id === a.customer_id);
-              const timeAgo = Math.floor((Date.now() - new Date(a.created_at).getTime()) / 60000);
-              const typeIcon = a.type === "email_sent" ? "📧" : a.type === "qbr_generated" ? "📊" : a.type === "playbook_triggered" ? "⚡" : "🔔";
-              return (
-                <div key={a.id} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-surface-light transition-colors animate-slide-up">
-                  <span className="text-sm">{typeIcon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">
-                      {a.payload} — <span className="text-text-muted">{a.result}</span>
-                    </p>
-                  </div>
-                  <span className="text-xs text-text-muted font-mono shrink-0">{timeAgo < 1 ? "now" : `${timeAgo}m`}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Customer List Quick View */}
-      <div className="bg-surface border border-border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-heading font-semibold text-sm">All Customers</h3>
-          <Link href="/dashboard/customers" className="text-xs text-indigo hover:text-indigo-light">View all →</Link>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {customers.map(c => (
-            <Link key={c.id} href={`/dashboard/customers/${c.id}`} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-border-light bg-base transition-colors">
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold ${getHealthBg(c.health_score)}`}>
-                {c.health_score}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{c.name}</p>
-                <p className="text-xs text-text-muted">${c.mrr.toLocaleString()}/mo · {getHealthLabel(c.health_score)}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

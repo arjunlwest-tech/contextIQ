@@ -1,13 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { detectExpansionOpportunities } from "@/lib/claude";
+import { ExpansionOpportunitySchema } from "@/lib/schemas";
+import { z } from "zod";
 
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json();
-    const result = await detectExpansionOpportunities(data);
+    const rawData = await req.json();
+    const validatedData = ExpansionOpportunitySchema.parse(rawData);
+    
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json([{ 
+        customerId: validatedData[0]?.id || "mock-1",
+        opportunityType: "seat_expansion",
+        evidence: "High feature usage detected in simulated fallback.",
+        estimatedValue: 500,
+        suggestedPlay: "Send QBR to highlight team usage limits."
+      }]);
+    }
+
+    const result = await detectExpansionOpportunities(validatedData);
     return NextResponse.json(result);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Detection failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid Input Data", issues: (error as any).errors }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Internal Server Error during expansion detection" }, { status: 500 });
   }
 }
